@@ -15,6 +15,11 @@ class Player(pygame.sprite.Sprite):
         self.position = pygame.math.Vector2(self.rect.center) # The player's position
         self.speed = 200
 
+    def import_assets(self):
+        self.animations = { 
+        
+        }
+    
     # Get the input from the player
     def input(self): 
         keys = pygame.key.get_pressed() # Get the keys that are pressed
@@ -36,8 +41,17 @@ class Player(pygame.sprite.Sprite):
 
     # Move the player
     def move(self, dt):
-        self.position += self.direction * self.speed * dt
-        self.rect.center = self.position
+
+        if self.direction.magnitude() > 0: # If the player is moving
+            self.direction = self.direction.normalize() # Normalize the direction vector
+
+        # Horizontal movement
+        self.position.x += self.direction.x * self.speed * dt
+        self.rect.centerx = self.position.x
+
+        # Vertical movement
+        self.position.y += self.direction.y * self.speed * dt
+        self.rect.centery = self.position.y
 
     def update(self, dt):
         self.input()
