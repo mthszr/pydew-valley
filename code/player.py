@@ -13,11 +13,12 @@ class Player(pygame.sprite.Sprite):
 
         # Create the player
         self.image = self.animations[self.status][self.frame_index]
-        self.rect = self.image.get_rect(center = position) # Set the player's position
-
+        self.rectangle = self.image.get_rect(center = position) # Set the player's position
+        self.z = LAYERS['main']
+        
         # Movement variables
         self.direction = pygame.math.Vector2() # The direction the player is moving
-        self.position = pygame.math.Vector2(self.rect.center) # The player's position
+        self.position = pygame.math.Vector2(self.rectangle.center) # The player's position
         self.speed = 200
 
         # Timer
@@ -133,11 +134,11 @@ class Player(pygame.sprite.Sprite):
 
         # Horizontal movement
         self.position.x += self.direction.x * self.speed * dt
-        self.rect.centerx = self.position.x
+        self.rectangle.centerx = self.position.x
 
         # Vertical movement
         self.position.y += self.direction.y * self.speed * dt
-        self.rect.centery = self.position.y
+        self.rectangle.centery = self.position.y
 
     def update(self, dt):
         self.input()
