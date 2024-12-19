@@ -55,7 +55,6 @@ class Player(pygame.sprite.Sprite):
         for animation in self.animations.keys():
             full_path = './graphics/character/' + animation
             self.animations[animation] = import_folder(full_path)
-        print(self.animations)
 
     def animate(self, dt):
         self.frame_index += 4 * dt # Increase the frame index 
@@ -112,7 +111,6 @@ class Player(pygame.sprite.Sprite):
                 self.timers['seed switch'].activate()
                 self.seed_index += 1
                 self.selected_seed = self.seeds[self.seed_index % len(self.seeds)]
-
 
     def update_timers(self):
         for timer in self.timers.values():
