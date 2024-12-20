@@ -4,7 +4,7 @@ from support import *
 from timer import Timer
 
 class Player(pygame.sprite.Sprite): 
-    def __init__(self, position, group, collision_sprites):  
+    def __init__(self, position, group, collision_sprites, tree_sprites):  
         super().__init__(group)
 
         self.import_assets()
@@ -43,8 +43,20 @@ class Player(pygame.sprite.Sprite):
         self.seed_index = 0
         self.selected_seed = self.seeds[self.seed_index]
 
+        # Interaction
+        self.tree_sprites = tree_sprites
+
     def use_tool(self):
-        pass
+        if self.selected_tool == 'hoe':
+            pass
+
+        
+
+        if self.selected_tool == 'water':
+            pass
+
+    def get_target_position(self):
+        self.target_position = self.rectangle.center + PLAYER_TOOL_OFFSET[self.status.split('_')[0]]
     
     def use_seed(self):
         pass
@@ -167,11 +179,11 @@ class Player(pygame.sprite.Sprite):
         self.rectangle.centery = self.hitbox.centery
         self.collision('vertical')
         
-
     def update(self, dt):
         self.input()
         self.get_status()
         self.update_timers()
+        self.get_target_position()
 
         self.move(dt)
         self.animate(dt)
