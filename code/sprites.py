@@ -7,9 +7,15 @@ class Generic(pygame.sprite.Sprite):
     def __init__(self, position, surface, groups, z = LAYERS['main']):
         super().__init__(groups)
         self.image = surface
-        self.rectangle = self.image.get_rect(topleft = position)
+        self.rect = self.image.get_rect(topleft = position)
         self.z = z
-        self.hitbox = self.rectangle.copy().inflate(-self.rectangle.width * 0.2, -self.rectangle.height * 0.75)
+        self.hitbox = self.rect.copy().inflate(-self.rect.width * 0.2, -self.rect.height * 0.75)
+
+class Interaction(Generic):
+    def __init__(self, position, size, groups, name):
+        surface = pygame.Surface(size)
+        super().__init__(position, surface, groups)
+        self.name = name
 
 class Water(Generic):
     def __init__(self, position, frames, groups):
@@ -37,7 +43,7 @@ class Water(Generic):
 class WildFlower(Generic):
     def __init__(self, position, surface, groups):
         super().__init__(position, surface, groups)
-        self.hitbox = self.rectangle.copy().inflate(-20, -self.rectangle.height * 0.9)
+        self.hitbox = self.rect.copy().inflate(-20, -self.rect.height * 0.9)
 
 class Particle(Generic):
     def __init__(self, position, surface, groups, z, duration = 200):
@@ -57,7 +63,7 @@ class Particle(Generic):
             self.kill()
 
 class Tree(Generic):
-    def __init__(self, position, surface, groups, name):
+    def __init__(self, position, surface, groups, name, player_add):
         super().__init__(position, surface, groups)
 
         # Tree atrributes
@@ -71,7 +77,9 @@ class Tree(Generic):
         self.apple_surface = pygame.image.load('./graphics/fruit/apple.png')
         self.apple_position = APPLE_POSITION[name]
         self.apple_sprites = pygame.sprite.Group()
-        self.creat_fruits()
+        self.create_fruits()
+
+        self.player_add = player_add
 
     def damage(self):
         
@@ -82,35 +90,37 @@ class Tree(Generic):
         if len(self.apple_sprites.sprites()) > 0:
             random_apple = choice(self.apple_sprites.sprites())
             Particle(
-                position = random_apple.rectangle.topleft, 
+                position = random_apple.rect.topleft, 
                 surface = random_apple.image, 
                 groups = self.groups()[0], 
                 z = LAYERS['fruit'])
+            self.player_add('apple')
             random_apple.kill()
 
     def check_death(self):
         if self.health <= 0:
             Particle(
-                position = self.rectangle.topleft,
+                position = self.rect.topleft,
                 surface = self.image,
                 groups = self.groups()[0],
                 z = LAYERS['fruit'],
                 duration = 300
             )
             self.image = self.stump_surface
-            self.rectangle = self.image.get_rect(midbottom = self.rectangle.midbottom)
-            self.hitbox = self.rectangle.copy().inflate(-10, -self.rectangle.height * 0.6)
+            self.rect = self.image.get_rect(midbottom = self.rect.midbottom)
+            self.hitbox = self.rect.copy().inflate(-10, -self.rect.height * 0.6)
             self.alive = False
+            self.player_add('wood')
 
     def update(self, dt):
         if self.alive:
             self.check_death()
 
-    def creat_fruits(self):
+    def create_fruits(self):
         for position in self.apple_position:
             if randint(0, 10) < 2:
-                x = position[0] + self.rectangle.left
-                y = position[1] + self.rectangle.top
+                x = position[0] + self.rect.left
+                y = position[1] + self.rect.top
                 Generic(
                     position = (x, y), 
                     surface = self.apple_surface, 

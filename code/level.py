@@ -2,9 +2,10 @@ import pygame
 from settings import *
 from player import Player
 from overlay import Overlay
-from sprites import Generic, Water, WildFlower, Tree
+from sprites import Generic, Water, WildFlower, Tree, Interaction
 from pytmx.util_pygame import load_pygame
 from support import *
+from transition import Transition
 
 class Level:
     def __init__(self):
@@ -15,9 +16,11 @@ class Level:
         self.all_sprites = CameraGroup()
         self.collision_sprites = pygame.sprite.Group()
         self.tree_sprites = pygame.sprite.Group()
+        self.interaction_sprites = pygame.sprite.Group()
 
         self.setup()
         self.overlay = Overlay(self.player)
+        self.transition = Transition(self.reset, self.player)
 
     def setup(self):
         tmx_data = load_pygame('./data/map.tmx')
@@ -42,7 +45,12 @@ class Level:
 
         # Tree import
         for obj in tmx_data.get_layer_by_name('Trees'):
-            Tree((obj.x, obj.y), obj.image, [self.all_sprites, self.collision_sprites, self.tree_sprites], obj.name)
+            Tree(
+                position = (obj.x, obj.y), 
+                surface = obj.image, 
+                groups = [self.all_sprites, self.collision_sprites, self.tree_sprites], 
+                name = obj.name, 
+                player_add =  self.player_add)
   
         # Wildflowers import
         for obj in tmx_data.get_layer_by_name('Decoration'):
@@ -59,19 +67,39 @@ class Level:
                     position = (obj.x, obj.y), 
                     group = self.all_sprites, 
                     collision_sprites = self.collision_sprites,
-                    tree_sprites = self.tree_sprites)
+                    tree_sprites = self.tree_sprites,
+                    interaction = self.interaction_sprites)
+                
+            if obj.name == 'Bed':
+                Interaction((obj.x, obj.y), (obj.width, obj.height), self.interaction_sprites, obj.name)
+
         Generic(
             position = (0,0),
             surface = pygame.image.load('./graphics/world/ground.png').convert_alpha(),
             groups = self.all_sprites,
             z = LAYERS['ground'])
+        
+    def player_add(self, item):
+        
+        self.player.item_inventory[item] += 1
+ 
+    def reset(self):
 
+        # Apples on trees
+        for tree in self.tree_sprites.sprites():
+            for apple in tree.apple_sprites.sprites():
+                apple.kill()
+            tree.create_fruits()
+    
     def run(self, dt):
         self.display_surface.fill('black')
         self.all_sprites.custom_draw(self.player)
         self.all_sprites.update(dt)
 
         self.overlay.display()
+        
+        if self.player.sleep:
+            self.transition.play()
 
 class CameraGroup(pygame.sprite.Group):
     def __init__(self):
@@ -80,20 +108,20 @@ class CameraGroup(pygame.sprite.Group):
         self.offset = pygame.math.Vector2()
         
     def custom_draw(self, player):
-        self.offset.x = player.rectangle.centerx - SCREEN_WIDTH / 2
-        self.offset.y = player.rectangle.centery - SCREEN_HEIGHT / 2
+        self.offset.x = player.rect.centerx - SCREEN_WIDTH / 2
+        self.offset.y = player.rect.centery - SCREEN_HEIGHT / 2
 
         for layer in LAYERS.values():
-            for sprite in sorted(self.sprites(), key = lambda sprite: sprite.rectangle.centery):
+            for sprite in sorted(self.sprites(), key = lambda sprite: sprite.rect.centery):
                 if sprite.z == layer:
-                    offset_rectangle = sprite.rectangle.copy()
-                    offset_rectangle.center -= self.offset
-                    self.display_surface.blit(sprite.image, offset_rectangle)
+                    offset_rect = sprite.rect.copy()
+                    offset_rect.center -= self.offset
+                    self.display_surface.blit(sprite.image, offset_rect)
 
                     if sprite == player:
-                        pygame.draw.rect(self.display_surface, 'red', offset_rectangle, 5)
-                        hitbox_rectangle = player.hitbox.copy()
-                        hitbox_rectangle.center = offset_rectangle.center
-                        pygame.draw.rect(self.display_surface, 'green', hitbox_rectangle, 5)
-                        target_position  = offset_rectangle.center + PLAYER_TOOL_OFFSET[player.status.split('_')[0]]
+                        pygame.draw.rect(self.display_surface, 'red', offset_rect, 5)
+                        hitbox_rect = player.hitbox.copy()
+                        hitbox_rect.center = offset_rect.center
+                        pygame.draw.rect(self.display_surface, 'green', hitbox_rect, 5)
+                        target_position  = offset_rect.center + PLAYER_TOOL_OFFSET[player.status.split('_')[0]]
                         pygame.draw.circle(self.display_surface, 'blue', target_position, 5)
