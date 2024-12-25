@@ -7,6 +7,8 @@ from pytmx.util_pygame import load_pygame
 from support import *
 from transition import Transition
 from soil import SoilLayer
+from sky import Rain
+from random import randint
 
 class Level:
     def __init__(self):
@@ -23,6 +25,11 @@ class Level:
         self.setup()
         self.overlay = Overlay(self.player)
         self.transition = Transition(self.reset, self.player)
+
+        # Sky
+        self.rain = Rain(self.all_sprites)
+        self.raining = randint(0, 10) > 3
+        self.soil_layer.raining = self.raining
 
     def setup(self):
         tmx_data = load_pygame('./data/map.tmx')
@@ -90,6 +97,10 @@ class Level:
 
         # Soil
         self.soil_layer.remove_water()
+        self.raining = randint(0, 10) > 3
+        self.soil_layer.raining = self.raining
+        if self.raining:
+            self.soil_layer.water_all()
 
         # Apples on trees
         for tree in self.tree_sprites.sprites():
@@ -104,6 +115,11 @@ class Level:
 
         self.overlay.display()
         
+        # Rain
+        if self.raining:
+            self.rain.update()
+        
+        # Transition overlay
         if self.player.sleep:
             self.transition.play()
 
@@ -123,11 +139,3 @@ class CameraGroup(pygame.sprite.Group):
                     offset_rect = sprite.rect.copy()
                     offset_rect.center -= self.offset
                     self.display_surface.blit(sprite.image, offset_rect)
-
-                    if sprite == player:
-                        pygame.draw.rect(self.display_surface, 'red', offset_rect, 5)
-                        hitbox_rect = player.hitbox.copy()
-                        hitbox_rect.center = offset_rect.center
-                        pygame.draw.rect(self.display_surface, 'green', hitbox_rect, 5)
-                        target_position  = offset_rect.center + PLAYER_TOOL_OFFSET[player.status.split('_')[0]]
-                        pygame.draw.circle(self.display_surface, 'blue', target_position, 5)
